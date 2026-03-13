@@ -24,24 +24,81 @@ Crie o arquivo na pasta do projeto ou use o conteúdo do repositório: [docker-c
 
 ## 🛡️ 4. Permissões de Host e Firewall
 
-Para que o container consiga escrever na pasta do Raspberry Pi e para permitir o acesso remoto via Meshnet:
+Para que o container consiga escrever na pasta do Raspberry Pi:
 
 ```bash
 # 1. Garante que o host respeite o UID 1001 do container
 sudo chown -R 1001:1001 ~/open-claw/openclaw_data
+```
 
-# 2. Ajusta o firewall para acesso via Meshnet (NordVPN)
-sudo ufw allow in on nordlynx to any port 18789
+Confira o estado atual do seu firewall com: 
 
-# 3. (Opcional) Permite acesso pela rede local privada
+```bash
+# Mostra o status sem numeracao
+sudo ufw status
+
+# Mostra o status com numeracao, facilita quando precisar deletar uma regra conforme proximo comando
+sudo ufw status numbered
+
+# Facilita quando precisar deletar uma regra
+sudo ufw delete 1
+```
+
+
+
+Se estiver seguindo esse tutorial sem usar a rede mesh possivelmente esse comando ira retornar algo como:
+
+
+| To          | Action | From          |
+| ----------- | ------ | ------------- |
+| 22/tcp      | ALLOW  | Anywhere      |
+| 22/tcp (v6) | ALLOW  | Anywhere (v6) |
+
+
+Isso indica que temos acesso via SSH na porta 22/tcp de qualquer lugar, porem sem acesso a porta 18789 por exemplo, precisamos liberar essa porta para acessarmos o dashboard do open-claw futuramente.
+
+```bash
+# Permite acesso pela rede local
 sudo ufw allow from 192.168.10.0/24 to any port 18789
 ```
 
-**Quando essas regras são necessárias:** As regras das opções 2 e 3 (Meshnet e rede local) são importantes quando a interface NordLynx **não** está configurada para aceitar conexões de qualquer origem ("from anywhere"). Se a NordLynx já estiver liberada para anywhere, esses passos podem ser dispensados. Confira o estado atual com:
+Se estiver seguindo os meus passos com a rede meshnet da NordVPN, teremos algo como:
+
+
+| To                        | Action | From            |
+| ------------------------- | ------ | --------------- |
+| Anywhere on nordlynx      | ALLOW  | Anywhere        |
+| Anywhere (v6) on nordlynx | ALLOW  | Anywhere (v6)   |
+| 22/tcp                    | ALLOW  | 192.168.10.0/24 |
+
+
+Nesse caso minha rede nordlynx esta configurada com o anywhere on nordlynx, nada precisa ser alterado, nao preciso liberar a porta 18789, pois qualquer dispositivo meu conectado nessa rede privativa da nordvpn pode se comunicar com qualquer porta do meu servidor. Porém se quiser ser mais restritivo, poderiamos deixar apenas acesso apenas a porta 22 com protocolo tcp e a porta 18789 ambos na rede meshnet da NordVPN.
 
 ```bash
-sudo ufw status
+# 1. Remove todas as permissoes "anywhere on nordlynx" da rede meshnet (NordVPN)
+sudo ufw delete allow in on nordlynx
+
+# 2. Permite acesso via SSH na rede meshnet (NordVPN)
+sudo ufw allow in on nordlynx to any port 22 proto tcp
+
+#3. Libera a porta 189789 na rede meshnet (NordVPN)
+sudo ufw allow in on nordlynx to any port 18789
 ```
+
+OBS: Quando essas regras são necessárias: As regras são importantes quando a interface NordLynx não está configurada para aceitar conexões em qualquer porta ("Anywhere on nordlynx")..
+
+Ao executar os comandos teríamos algo assim:
+
+
+| To                      | Action | From          |
+| ----------------------- | ------ | ------------- |
+| 22/tcp on nordlynx      | ALLOW  | Anywhere      |
+| 18789 on nordlynx       | ALLOW  | Anywhere      |
+| 22/tcp (v6) on nordlynx | ALLOW  | Anywhere (v6) |
+| 18789 (v6) on nordlynx  | ALLOW  | Anywhere (v6) |
+
+
+Poderiamos restringir tambem de qual IP podemos receber conexões, apenas da nossa rede local, ou ate mesmo de um IP fixo alterando o from no firewall.
 
 ## 🚀 5. Build e Inicialização
 
@@ -250,7 +307,21 @@ docker compose restart open-claw
 
 ## Opções de acesso ao dashboard
 
-Existem várias formas de acessar o OpenClaw a partir do seu computador. Este guia foi escrito usando a **Opção 1**; outras opções serão documentadas conforme testadas.
+O dashboard permite, em resumo, **duas formas de acesso:** (1) **localhost** — como o servidor não tem interface gráfica, usou-se túnel SSH do cliente (ex.: Galaxy Book) ao servidor, de modo que o OpenClaw “vê” a conexão como local (Opção 1 abaixo); (2) **acesso direto por URL** — exige certificado HTTPS no servidor (reverse proxy, ex.: Nginx, ou Cloudflare Tunnel que pode fornecer isso; em rede privada/mesh também é possível usar HTTPS com Nginx para o “cadeado verde” e Secure Context). Este guia foi escrito usando a **Opção 1**; outras opções serão documentadas conforme testadas.
+
+### Visão geral: acesso público vs privado
+
+**1. Acesso público (qualquer lugar do mundo, sem VPN)**  
+O serviço fica exposto na internet.
+
+- **Cloudflare Tunnel:** Não é preciso abrir portas no roteador. O Raspberry “disca” para a Cloudflare e cria um túnel. Acesso via algo como `openclaw.seudominio.com`. Opção mais segura para acesso público.
+- **Port forwarding (redirecionamento de portas):** Abrir a porta 443 no roteador apontando para o IP do Raspberry. Exige DNS dinâmico (DDNS) se não houver IP fixo e um reverse proxy (ex.: Nginx) para HTTPS.
+
+**2. Acesso privado / rede mesh (somente seus dispositivos)**  
+O serviço não fica na internet pública; só existe na “nuvem privada” que você criou.
+
+- **Tailscale / NordVPN Meshnet:** O Raspberry e o cliente (ex.: Galaxy Book) formam uma rede virtual segura. De qualquer lugar, com a mesh ativa no cliente, acessa-se o dashboard pelo IP (ou nome) da mesh do Raspberry.
+- **Papel do reverse proxy aqui:** O navegador exige HTTPS para certos recursos (ex.: Secure Context do chat). O Nginx, nesse cenário, serve para fornecer o certificado SSL (“cadeado verde”), fazendo o dashboard funcionar sem depender do túnel SSH.
 
 ---
 
@@ -291,7 +362,7 @@ Em resumo: O seu Galaxy Book reserva a porta 18789 dele. Tudo o que você digita
 
 ### Opção 2: HTTPS com reverse proxy (Nginx)
 
-Se você quer acessar "direto" pelo endereço, sem túnel, use um reverse proxy com certificado SSL/TSL. Esta seção será preenchida em breve.
+Se você quer acessar "direto" pelo endereço, sem túnel, use um reverse proxy com certificado SSL/TLS. Isso se aplica tanto ao acesso público (port forwarding) quanto ao acesso privado (mesh). Esta seção será preenchida em breve.
 
 ---
 
@@ -342,6 +413,4 @@ Por fim, teste o chat, enviando um "Olá" e veja se há resposta.
 Se aparecer erro 404 ou falha ao interagir: verifique no painel lateral em Agentes se o modelo que você definiu nas configurações está selecionado para o agente em uso. (Ver [painel de agentes/modelo](../../assets/open-claw-agents-model-panel.png) como exemplo.)
 
 ---
-
-
 

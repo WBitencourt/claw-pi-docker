@@ -1,6 +1,6 @@
 # 🚀 Raspberry Pi server setup guide
 
-Este guia documenta a configuração de um servidor Raspberry Pi 3 B+ focado em segurança, acesso remoto via Meshnet e preparação para ambientes de desenvolvimento. A configuração foi feita a partir de um computador com Ubuntu Linux.
+Este guia documenta a configuração de um servidor Raspberry Pi 3 B+ focado em segurança, acesso remoto (uma das opções documentadas aqui usa Meshnet) e preparação para ambientes de desenvolvimento. A configuração foi feita a partir de um computador com Ubuntu Linux.
 
 ## 💻 Setup utilizado (computador de configuração)
 
@@ -80,6 +80,10 @@ sudo ufw enable
 | --------------- | ------ | --------------- |
 | 22/tcp          | ALLOW  | Anywhere        |
 | 22/tcp (v6)     | ALLOW  | Anywhere (v6)   |
+
+### Acesso remoto (opcional)
+
+O acesso remoto ao Pi **não exige** NordVPN. É possível usar: redirecionamento de portas no roteador, [Cloudflare Tunnel](https://www.cloudflare.com/products/tunnel/) (acesso público), NordVPN Meshnet, [Tailscale](https://tailscale.com/) ou acesso direto por IP ou nome do host na porta 22 (SSH). Neste guia, o caminho documentado usa **NordVPN com Meshnet** porque o autor já utiliza e paga pelo serviço; quem quiser pode seguir esse passo a passo. Nem a NordVPN nem o Tailscale expõem o serviço à internet pública—apenas dispositivos na rede mesh têm acesso (acesso privado).
 
 ## 🌐 3. NordVPN & Meshnet (acesso remoto mundial)
 
