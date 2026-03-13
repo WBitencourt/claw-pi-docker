@@ -31,3 +31,15 @@ Instalação do Docker no Raspberry Pi (método rápido ou repositório oficial)
 Criação do projeto com Dockerfile e docker-compose, build do container, onboarding e acesso ao dashboard do OpenClaw.
 
 **Guia completo:** [config/open-claw/README.md](config/open-claw/README.md)
+
+---
+
+## Comandos úteis
+
+Comandos úteis para monitorar o container e o servidor:
+
+| O que fazer | Comando |
+|-------------|---------|
+| Ver uso de CPU/memória do container Open-Claw | `docker stats open-claw` |
+| Ver processos do servidor (interativo) | `htop` |
+| Ver temperatura da CPU do servidor (Raspberry Pi) | `vcgencmd measure_temp` |
