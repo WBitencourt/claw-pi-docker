@@ -14,83 +14,13 @@ mkdir ~/open-claw && cd ~/open-claw
 
 Utilizamos um build de múltiplos estágios para garantir uma imagem leve e segura, rodando com um usuário não-root (UID 1001).
 
-Crie o arquivo e cole o conteúdo abaixo:
-
-```bash
-nano Dockerfile
-```
-
-```dockerfile
-# Estágio Base: Node 24 (Recomendado)
-FROM node:24-bookworm-slim AS base
-
-# Estágio de Instalação
-FROM base AS installer
-RUN apt-get update && apt-get install -y curl bash procps git
-WORKDIR /install
-
-# Instalamos o pacote globalmente em uma pasta específica para podermos copiar depois
-RUN npm install -g openclaw@latest --prefix /root/.openclaw
-
-# ---------
-
-# Estágio de Execução (Runner)
-FROM base AS runner
-WORKDIR /app
-
-# Criando grupo e usuário conforme o padrão de segurança (1001)
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 app
-
-# Variáveis de ambiente para persistência
-ENV OPENCLAW_HOME=/app/data
-ENV OPENCLAW_STATE_DIR=/app/data/state
-ENV OPENCLAW_CONFIG_PATH=/app/data/config.toml
-ENV PATH="/app/bin:${PATH}"
-
-# Copiamos os arquivos instalados no estágio anterior
-COPY --from=installer --chown=app:nodejs /root/.openclaw/bin /app/bin
-COPY --from=installer --chown=app:nodejs /root/.openclaw/lib /app/lib
-
-# Criar pastas de dados e garantir permissões internas
-RUN mkdir -p /app/data /app/bin && chown -R app:nodejs /app
-
-# Mudar para o usuário seguro
-USER app
-
-# Porta do Dashboard/Control UI
-EXPOSE 18789
-
-# Comando para rodar o gateway em modo foreground
-ENTRYPOINT ["openclaw", "gateway", "run", "--allow-unconfigured"]
-```
+Crie o arquivo na pasta do projeto (ex.: `~/open-claw`) ou use o conteúdo do repositório: [Dockerfile](Dockerfile).
 
 ## ⚙️ 3. Configurando o Docker Compose
 
 O Compose gerencia o container e limita os recursos para não sobrecarregar o hardware do Raspberry Pi.
 
-Crie o arquivo e cole o conteúdo abaixo:
-
-```bash
-nano docker-compose.yml
-```
-
-```yaml
-services:
-  open-claw:
-    build: .
-    container_name: open-claw
-    restart: unless-stopped
-    ports:
-      - "18789:18789"
-    volumes:
-      - ./openclaw_data:/app/data  # Persistência de dados e config
-    # Limite de memória para RPi 3 B+
-    deploy:
-      resources:
-        limits:
-          memory: 600M
-```
+Crie o arquivo na pasta do projeto ou use o conteúdo do repositório: [docker-compose.yml](docker-compose.yml).
 
 ## 🛡️ 4. Permissões de Host e Firewall
 
@@ -115,9 +45,11 @@ sudo ufw status
 
 ## 🚀 5. Build e Inicialização
 
-Certifique-se de estar logado no Docker Hub se necessário e suba o serviço:
+Certifique-se de estar no diretório onde estão o `Dockerfile` e o `docker-compose.yml` (ex.: `~/open-claw`). Se necessário, faça login no Docker Hub e suba o serviço:
 
 ```bash
+cd ~/open-claw
+
 # Login no registro (se necessário)
 docker login
 
@@ -312,7 +244,7 @@ Adicione os endereços de onde você vai acessar o dashboard para evitar erro de
 Exemplo (substitua os IPs e hostnames pelos seus — ex.: IP da LAN, IP da meshnet, nomes locais):
 
 ```bash
-docker exec -it open-claw openclaw config set gateway.controlUi.allowedOrigins '["http://localhost:18789","https://IP_DA_SUA_LAN:18789","https://IP_MESHNET:18789","https://raspberry-server.local:18789","https://raspberry-server.nordvpn:18789"]'
+docker exec -it open-claw openclaw config set gateway.controlUi.allowedOrigins '["http://localhost:18789","https://IP_DA_SUA_LAN:18789","https://IP_MESHNET:18789","https://raspberry-server.local:18789","https://raspberry-server.nord:18789"]'
 docker compose restart open-claw
 ```
 
@@ -371,7 +303,7 @@ Outras formas de acesso estão sendo testadas. Esta seção será preenchida em 
 
 ## Login, aprovação de dispositivo e uso do chat
 
-**Na Opção 1**, acesse `http://localhost:18789/overview`. Na tela de visão geral, faça login: como foi escolhida autenticação por senha no onboarding, use o campo **Password** e cole a senha do gateway. (Ver [image.png](./image.png).)
+**Na Opção 1**, acesse `http://localhost:18789/overview`. Na tela de visão geral, faça login: como foi escolhida autenticação por senha no onboarding, use o campo **Password** e cole a senha do gateway. (Ver [tela de login](../../assets/open-claw-dashboard-login.png).)
 
 É necessário aprovar o dispositivo no Raspberry. No terminal do Raspberry:
 
@@ -407,7 +339,7 @@ sudo nano ~/open-claw/openclaw_data/config.toml
 
 Por fim, teste o chat, enviando um "Olá" e veja se há resposta.
 
-Se aparecer erro 404 ou falha ao interagir: verifique no painel lateral em Agentes se o modelo que você definiu nas configurações está selecionado para o agente em uso. (Ver image2.png como exemplo.)
+Se aparecer erro 404 ou falha ao interagir: verifique no painel lateral em Agentes se o modelo que você definiu nas configurações está selecionado para o agente em uso. (Ver [painel de agentes/modelo](../../assets/open-claw-agents-model-panel.png) como exemplo.)
 
 ---
 

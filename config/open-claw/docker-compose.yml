@@ -1,0 +1,14 @@
+services:
+  open-claw:
+    build: .
+    container_name: open-claw
+    restart: unless-stopped
+    ports:
+      - "18789:18789"
+    volumes:
+      - ./openclaw_data:/app/data  # Persistência de dados e config
+    # Limite de memória para RPi 3 B+
+    deploy:
+      resources:
+        limits:
+          memory: 600M
