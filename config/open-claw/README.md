@@ -321,7 +321,10 @@ O serviço fica exposto na internet.
 O serviço não fica na internet pública; só existe na “nuvem privada” que você criou.
 
 - **Tailscale / NordVPN Meshnet:** O Raspberry e o cliente (ex.: Galaxy Book) formam uma rede virtual segura. De qualquer lugar, com a mesh ativa no cliente, acessa-se o dashboard pelo IP (ou nome) da mesh do Raspberry.
+
+**3. HTTPS**  
 - **Papel do reverse proxy aqui:** O navegador exige HTTPS para certos recursos (ex.: Secure Context do chat). O Nginx, nesse cenário, serve para fornecer o certificado SSL (“cadeado verde”), fazendo o dashboard funcionar sem depender do túnel SSH.
+- **Cloudflare Tunnel:** Fornece automaticamente certificado SSL, nao sendo necessário a instalação no servidor.
 
 ---
 
@@ -360,15 +363,15 @@ Em resumo: O seu Galaxy Book reserva a porta 18789 dele. Tudo o que você digita
 
 ---
 
-### Opção 2: HTTPS com reverse proxy (Nginx)
+### Opção 2: HTTPS com reverse proxy (Nginx) com acesso a IP/DNS locais
 
-Se você quer acessar "direto" pelo endereço, sem túnel, use um reverse proxy com certificado SSL/TLS. Isso se aplica tanto ao acesso público (port forwarding) quanto ao acesso privado (mesh). Esta seção será preenchida em breve.
+Esta seção será preenchida em breve.
 
 ---
 
-### Opção 3: (Em breve)
+### Opção 3: HTTPS com Cloudflare Tunnel e/ou reverse proxy (Nginx) com acesso a IP/DNS públicos.
 
-Outras formas de acesso estão sendo testadas. Esta seção será preenchida em breve.
+Esta seção será preenchida em breve.
 
 ---
 
