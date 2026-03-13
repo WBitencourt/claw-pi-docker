@@ -30,3 +30,16 @@ Docker installation on the Raspberry Pi (quick method or official repository). R
 Project setup with Dockerfile and docker-compose, container build, onboarding, and access to the OpenClaw dashboard.
 
 **Full guide:** [config/open-claw/README.md](config/open-claw/README.md)
+
+---
+
+## Useful Commands
+
+Useful Commands for Monitoring the Container and Server:
+
+| O que fazer | Comando |
+|-------------|---------|
+| View CPU/memory usage for the Open-Claw container | `docker stats open-claw` |
+| View server processes (interactive) | `htop` |
+| Check server CPU temperature (Raspberry Pi) | `vcgencmd measure_temp` |
+
