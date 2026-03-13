@@ -3,30 +3,30 @@
 # claw-pi-docker
 Dockerized OpenClaw server for Raspberry Pi OS.
 
-## Guia de configuração
+## Setup guide
 
-Siga as etapas abaixo na ordem. Cada uma tem um guia detalhado — clique no link para abrir o README correspondente.
+Follow the steps below in order. Each has a detailed guide — click the link to open the corresponding README.
 
-- [1. Raspberry Pi OS](#1-raspberry-pi-os) — preparar o sistema no Raspberry (imagem do OS, SSH, rede, etc.).
-- [2. Docker](#2-docker) — instalar e configurar o Docker no Pi para rodar containers.
-- [3. Open-Claw](#3-open-claw) — configurar e rodar o servidor OpenClaw em container.
+- [1. Raspberry Pi OS](#1-raspberry-pi-os) — prepare the system on the Raspberry (OS image, SSH, network, etc.).
+- [2. Docker](#2-docker) — install and configure Docker on the Pi to run containers.
+- [3. Open-Claw](#3-open-claw) — set up and run the OpenClaw server in a container.
 
 ---
 
 ### 1. Raspberry Pi OS
 
-Base do servidor: gravar a imagem do Raspberry Pi OS no cartão SD, configurar usuário, SSH e rede. Sem esta etapa o Pi não estará pronto para os próximos passos.
+Server foundation: write the Raspberry Pi OS image to the SD card, configure user, SSH, and network. Without this step the Pi won’t be ready for the next steps.
 
-**Guia completo:** [config/pi-OS/README.md](config/pi-OS/README.md)
+**Full guide:** [config/pi-OS/README.md](config/pi-OS/README.md)
 
 ### 2. Docker
 
-Instalação do Docker no Raspberry Pi (método rápido ou repositório oficial). Necessário para executar o OpenClaw em container.
+Docker installation on the Raspberry Pi (quick method or official repository). Required to run OpenClaw in a container.
 
-**Guia completo:** [config/docker/README.md](config/docker/README.md)
+**Full guide:** [config/docker/README.md](config/docker/README.md)
 
 ### 3. Open-Claw
 
-Criação do projeto com Dockerfile e docker-compose, build do container, onboarding e acesso ao dashboard do OpenClaw.
+Project setup with Dockerfile and docker-compose, container build, onboarding, and access to the OpenClaw dashboard.
 
-**Guia completo:** [config/open-claw/README.md](config/open-claw/README.md)
+**Full guide:** [config/open-claw/README.md](config/open-claw/README.md)
