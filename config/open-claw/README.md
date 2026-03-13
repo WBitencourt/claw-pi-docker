@@ -343,13 +343,5 @@ Se aparecer erro 404 ou falha ao interagir: verifique no painel lateral em Agent
 
 ---
 
-## Comandos úteis
 
-Comandos úteis para monitorar o container e o servidor:
-
-| O que fazer | Comando |
-|-------------|---------|
-| Ver uso de CPU/memória do container Open-Claw | `docker stats open-claw` |
-| Ver processos do servidor (interativo) | `htop` |
-| Ver temperatura da CPU do servidor (Raspberry Pi) | `vcgencmd measure_temp` |
 
