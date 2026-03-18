@@ -7,14 +7,14 @@ Este método requer um servidor com Docker instalado. Se ainda não configurou o
 Primeiro, criamos uma pasta dedicada para manter os arquivos de configuração e persistência organizados:
 
 ```bash
-mkdir ~/open-claw && cd ~/open-claw
+mkdir ~/openclaw && cd ~/openclaw
 ```
 
 ## 🐳 2. Criando o Dockerfile (Hardened Multi-stage)
 
 Utilizamos um build de múltiplos estágios para garantir uma imagem leve e segura, rodando com um usuário não-root (UID 1001).
 
-Crie o arquivo na pasta do projeto (ex.: `~/open-claw`) ou use o conteúdo do repositório: [Dockerfile](Dockerfile).
+Crie o arquivo na pasta do projeto (ex.: `~/openclaw`) ou use o conteúdo do repositório: [Dockerfile](Dockerfile).
 
 ## ⚙️ 3. Configurando o Docker Compose
 
@@ -28,7 +28,7 @@ Para que o container consiga escrever na pasta do Raspberry Pi:
 
 ```bash
 # 1. Garante que o host respeite o UID 1001 do container
-sudo chown -R 1001:1001 ~/open-claw/openclaw_data
+sudo chown -R 1001:1001 ~/openclaw/volume
 ```
 
 Confira o estado atual do seu firewall com: 
@@ -102,15 +102,15 @@ Poderiamos restringir tambem de qual IP podemos receber conexões, apenas da nos
 
 ## 🚀 5. Build e Inicialização
 
-Certifique-se de estar no diretório onde estão o `Dockerfile` e o `docker-compose.yml` (ex.: `~/open-claw`). Se necessário, faça login no Docker Hub e suba o serviço:
+Certifique-se de estar no diretório onde estão o `Dockerfile` e o `docker-compose.yml` (ex.: `~/openclaw`). Se necessário, faça login no Docker Hub e suba o serviço:
 
 ```bash
-cd ~/open-claw
+cd ~/openclaw
 
 # Login no registro (se necessário)
 docker login
 
-# Build e start do container
+# Força o build e start do container
 docker compose up --build -d
 
 # Acompanhar o consumo de recursos
@@ -123,6 +123,13 @@ Com o container rodando, execute o assistente para configurar suas chaves de API
 
 ```bash
 docker exec -it open-claw openclaw onboard
+```
+
+ou, acesse diretamente o terminal do container, caso escolha essa alternativa os demais comando nesse passo a passo explicado, estando dentro do terminal do container, ignorar `docker exec -it open-claw` e executar diretamente, por exemplo `openclaw --version` 
+
+```bash
+docker exec -it open-claw /bin/bash
+openclaw onboard
 ```
 
 Após configurar, você poderá acessar o dashboard pelo navegador (por exemplo, no Galaxy Book: `http://IP_RASPBERRY:18789` ou via uma das opções de acesso descritas mais abaixo).
@@ -205,7 +212,7 @@ Exemplo de saída do assistente (valores sensíveis substituídos por placeholde
 │  Paste API key now
 │
 ◇  Enter OpenRouter API key
-│  sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  (substitua pela sua chave em https://openrouter.ai)
+│  sk-or-v1-[REDACTED]  (substitua pela sua chave em https://openrouter.ai; nunca publique chaves reais)
 │
 ◇  Model configured ─────────────────────╮
 │                                        │
@@ -232,7 +239,7 @@ Exemplo de saída do assistente (valores sensíveis substituídos por placeholde
 │  Enter password now
 │
 ◇  Gateway password
-│  Ex3mpl0S3nh4F4k3  (defina uma senha forte; este é apenas um exemplo)
+│  [SENHA_DO_GATEWAY]  (defina uma senha forte; este é apenas um exemplo)
 │
 ◇  Channel status ────────────────────────────╮
 │                                             │
@@ -265,7 +272,7 @@ Exemplo de saída do assistente (valores sensíveis substituídos por placeholde
 │
 ◇  Configure chat channels now?
 │  No
-Config overwrite: /app/data/config.toml (sha256 541968bc5b8951b7f2d7a641b1c60b54faca9f76a6005d91bea84c71105f4db2 -> 002d57a51dcbb6fd99078fdad813e955b6e70f2ae411a7959ee180880a46ddd9, backup=/app/data/config.toml.bak)
+Config overwrite: /app/data/config.toml (sha256 [REDACTED] -> [REDACTED], backup=/app/data/config.toml.bak)
 Updated $OPENCLAW_HOME/config.toml
 Workspace OK: $OPENCLAW_HOME/.openclaw/workspace
 Sessions OK: $OPENCLAW_HOME/state/agents/main/sessions
@@ -286,6 +293,105 @@ Sessions OK: $OPENCLAW_HOME/state/agents/main/sessions
 │  ○ Perplexity Search
 │  ● Skip for now
 └
+◇  Skills status ─────────────╮
+│                             │
+│  Eligible: 2                │
+│  Missing requirements: 42   │
+│  Unsupported on this OS: 7  │
+│  Blocked by allowlist: 0    │
+│                             │
+├─────────────────────────────╯
+│
+◇  Configure skills now? (recommended)
+│  No
+│
+◇  Hooks ──────────────────────────────────────────────────────────────────╮
+│                                                                          │
+│  Hooks let you automate actions when agent commands are issued.          │
+│  Example: Save session context to memory when you issue /new or /reset.  │
+│                                                                          │
+│  Learn more: https://docs.openclaw.ai/automation/hooks                   │
+│                                                                          │
+├──────────────────────────────────────────────────────────────────────────╯
+│
+◇  Enable hooks?
+│  Skip for now
+Config overwrite: /app/data/config.toml (sha256 [REDACTED] -> [REDACTED], backup=/app/data/config.toml.bak)
+│
+◇  Systemd ───────────────────────────────────────────────────────────────────────────────╮
+│                                                                                         │
+│  Systemd user services are unavailable. Skipping lingering checks and service install.  │
+│                                                                                         │
+├─────────────────────────────────────────────────────────────────────────────────────────╯
+
+│
+
+◇  
+Agents: main (default)
+Heartbeat interval: 30m (main)
+Session store (main): /app/data/state/agents/main/sessions/sessions.json (1 entries)
+- agent:main:main (8293m ago)
+│
+◇  Optional apps ────────────────────────╮
+│                                        │
+│  Add nodes for extra features:         │
+│  - macOS app (system + notifications)  │
+│  - iOS app (camera/canvas)             │
+│  - Android app (camera/canvas)         │
+│                                        │
+├────────────────────────────────────────╯
+│
+◇  Control UI ──────────────────────────────────────────────────────────────────────╮
+│                                                                                   │
+│  Web UI: http://172.18.0.2:18789/                                                 │
+│  Gateway WS: ws://172.18.0.2:18789                                                │
+│  Gateway: not detected (SECURITY ERROR: Gateway URL "ws://172.18.0.2:18789" uses  │
+│  plaintext ws:// to a non-loopback address.)                                      │
+│  Docs: https://docs.openclaw.ai/web/control-ui                                    │
+│                                                                                   │
+├───────────────────────────────────────────────────────────────────────────────────╯
+│
+◇  Workspace backup ────────────────────────────────────────╮
+│                                                           │
+│  Back up your agent workspace.                            │
+│  Docs: https://docs.openclaw.ai/concepts/agent-workspace  │
+│                                                           │
+├───────────────────────────────────────────────────────────╯
+│
+◇  Security ──────────────────────────────────────────────────────╮
+│                                                                 │
+│  Running agents on your computer is risky — harden your setup:  │
+│  https://docs.openclaw.ai/security                              │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────╯
+│
+◇  Enable zsh shell completion for openclaw?
+│  Yes
+Failed to install completion: Error: EACCES: permission denied, mkdir '/nonexistent'
+│
+◇  Shell completion ───────────────────────────────────────────────────────╮
+│                                                                          │
+│  Shell completion installed. Restart your shell or run: source ~/.zshrc  │
+│                                                                          │
+├──────────────────────────────────────────────────────────────────────────╯
+│
+◇  Web search ───────────────────────────────────────╮
+│                                                    │
+│  Web search was skipped. You can enable it later:  │
+│    openclaw configure --section web                │
+│                                                    │
+│  Docs: https://docs.openclaw.ai/tools/web          │
+│                                                    │
+├────────────────────────────────────────────────────╯
+│
+◇  What now ─────────────────────────────────────────────────────────────╮
+│                                                                        │
+│  What now: https://openclaw.ai/showcase ("What People Are Building").  │
+│                                                                        │
+├────────────────────────────────────────────────────────────────────────╯
+│
+└  Onboarding complete. Use the dashboard link above to control OpenClaw.
+
 ```
 
 **Dica — modelos gratuitos vs. crédito pago:** Os modelos marcados como *free* no OpenRouter podem falhar ou não responder com frequência. Após liberar um limite de uso pago na sua conta OpenRouter (ex.: um valor mínimo em dólares), as chamadas aos modelos tendem a funcionar de forma estável. Para uso confiável, considere configurar um crédito mínimo na [OpenRouter](https://openrouter.ai).
@@ -377,7 +483,7 @@ Esta seção será preenchida em breve.
 
 ## Login, aprovação de dispositivo e uso do chat
 
-**Na Opção 1**, acesse `http://localhost:18789/overview`. Na tela de visão geral, faça login: como foi escolhida autenticação por senha no onboarding, use o campo **Password** e cole a senha do gateway. (Ver [tela de login](../../assets/open-claw-dashboard-login.png).)
+**Na Opção 1**, acesse `http://localhost:18789/overview`. Na tela de visão geral, faça login: como foi escolhida autenticação por senha no onboarding, use o campo **Password** e cole a senha do gateway. (Ver [tela de login](../../assets/openclaw-dashboard-login.png).)
 
 É necessário aprovar o dispositivo no Raspberry. No terminal do Raspberry:
 
@@ -408,12 +514,12 @@ docker exec -it open-claw openclaw models set 'openrouter/meta-llama/llama-3.3-7
 Para remover modelos, edite o arquivo de configuração e apague as entradas desejadas em `agents.defaults.models`:
 
 ```bash
-sudo nano ~/open-claw/openclaw_data/config.toml
+sudo nano ~/openclaw/volume/config.toml
 ```
 
 Por fim, teste o chat, enviando um "Olá" e veja se há resposta.
 
-Se aparecer erro 404 ou falha ao interagir: verifique no painel lateral em Agentes se o modelo que você definiu nas configurações está selecionado para o agente em uso. (Ver [painel de agentes/modelo](../../assets/open-claw-agents-model-panel.png) como exemplo.)
+Se aparecer erro 404 ou falha ao interagir: verifique no painel lateral em Agentes se o modelo que você definiu nas configurações está selecionado para o agente em uso. (Ver [painel de agentes/modelo](../../assets/openclaw-agents-model-panel.png) como exemplo.)
 
 ---
 

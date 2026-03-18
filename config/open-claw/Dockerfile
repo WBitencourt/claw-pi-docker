@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y curl bash procps git
 WORKDIR /install
 
 # Instalamos o pacote globalmente em uma pasta específica para podermos copiar depois
-RUN npm install -g openclaw@latest --prefix /root/.openclaw
+RUN npm install -g openclaw@2026.3.11 --prefix /root/.openclaw
 
 # ---------
 
@@ -19,15 +19,16 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 app
 
+# Copiamos os arquivos instalados no estágio anterior
+COPY --from=installer --chown=app:nodejs /root/.openclaw/bin /app/bin
+COPY --from=installer --chown=app:nodejs /root/.openclaw/lib/node_modules /app/lib/node_modules
+
 # Variáveis de ambiente para persistência
 ENV OPENCLAW_HOME=/app/data
 ENV OPENCLAW_STATE_DIR=/app/data/state
 ENV OPENCLAW_CONFIG_PATH=/app/data/config.toml
 ENV PATH="/app/bin:${PATH}"
-
-# Copiamos os arquivos instalados no estágio anterior
-COPY --from=installer --chown=app:nodejs /root/.openclaw/bin /app/bin
-COPY --from=installer --chown=app:nodejs /root/.openclaw/lib /app/lib
+ENV NODE_PATH=/app/lib/node_modules
 
 # Criar pastas de dados e garantir permissões internas
 RUN mkdir -p /app/data /app/bin && chown -R app:nodejs /app

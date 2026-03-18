@@ -6,9 +6,9 @@ services:
     ports:
       - "18789:18789"
     volumes:
-      - ./openclaw_data:/app/data  # Persistência de dados e config
+      - ./volume:/app/data  # Persistência de dados e config
     # Limite de memória para RPi 3 B+
     deploy:
       resources:
         limits:
-          memory: 600M
+          memory: 700M
