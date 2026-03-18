@@ -1,66 +1,69 @@
-# 🦞 Setting up Open-Claw
+# 🦞 Configurando o Open-Claw
 
-[Português](README.md) | [English](README.en.md)
+Este método requer um servidor com Docker instalado. Se ainda não configurou o Docker no seu Raspberry Pi, siga nosso guia em [Docker Setup Guide](../docker/README.md).
 
-This method needs a server with Docker installed. If you have not set up Docker on your Raspberry Pi yet, follow our guide: [Docker Setup Guide](../docker/README.md).
+## 📂 1. Preparação do Diretório
 
-## 📂 1. Directory setup
-
-First, create a folder for your config and data so everything stays in one place:
+Primeiro, criamos uma pasta dedicada para manter os arquivos de configuração e persistência organizados:
 
 ```bash
 mkdir ~/openclaw && cd ~/openclaw
 ```
 
-## 🐳 2. Creating the Dockerfile (Hardened Multi-stage)
+## 🐳 2. Criando o Dockerfile (Hardened Multi-stage)
 
-We use a multi-stage build so the image stays small and safe. The app runs as a non-root user (UID 1001).
+Utilizamos um build de múltiplos estágios para garantir uma imagem leve e segura, rodando com um usuário não-root (UID 1001).
 
-Create the file in your project folder (e.g. `~/openclaw`) or use the one from this repo: [Dockerfile](Dockerfile).
+Crie o arquivo na pasta do projeto (ex.: `~/openclaw`) ou use o conteúdo do repositório: [Dockerfile](Dockerfile).
 
-## ⚙️ 3. Configuring Docker Compose
+## ⚙️ 3. Configurando o Docker Compose
 
-Compose runs the container and limits how much CPU and memory it can use, so the Raspberry Pi does not get overloaded.
+O Compose gerencia o container e limita os recursos para não sobrecarregar o hardware do Raspberry Pi.
 
-Create the file in your project folder or use the one from this repo: [docker-compose.yml](docker-compose.yml).
+Crie o arquivo na pasta do projeto ou use o conteúdo do repositório: [docker-compose.yml](docker-compose.yml).
 
-## 🛡️ 4. Host permissions and firewall
+## 🛡️ 4. Permissões de Host e Firewall
 
-So the container can write to a folder on the Raspberry Pi:
+Para que o container consiga escrever na pasta do Raspberry Pi:
 
 ```bash
-# 1. Make sure the host uses the same UID 1001 as the container
+# 1. Garante que o host respeite o UID 1001 do container
 sudo chown -R 1001:1001 ~/openclaw/volume
 ```
 
-Check your firewall with:
+Confira o estado atual do seu firewall com: 
 
 ```bash
-# Show status without numbers
+# Mostra o status sem numeracao
 sudo ufw status
 
-# Show status with numbers (useful when you want to delete a rule)
+# Mostra o status com numeracao, facilita quando precisar deletar uma regra conforme proximo comando
 sudo ufw status numbered
 
-# Delete a rule (e.g. rule 1)
+# Facilita quando precisar deletar uma regra
 sudo ufw delete 1
 ```
 
-If you are not using a mesh network, the output may look like this:
+
+
+Se estiver seguindo esse tutorial sem usar a rede mesh possivelmente esse comando ira retornar algo como:
+
 
 | To          | Action | From          |
 | ----------- | ------ | ------------- |
 | 22/tcp      | ALLOW  | Anywhere      |
 | 22/tcp (v6) | ALLOW  | Anywhere (v6) |
 
-This means SSH on port 22 is open from anywhere, but port 18789 is not. We need to open 18789 to use the Open-Claw dashboard later.
+
+Isso indica que temos acesso via SSH na porta 22/tcp de qualquer lugar, porem sem acesso a porta 18789 por exemplo, precisamos liberar essa porta para acessarmos o dashboard do open-claw futuramente.
 
 ```bash
-# Allow access from your local network
+# Permite acesso pela rede local
 sudo ufw allow from 192.168.10.0/24 to any port 18789
 ```
 
-If you use NordVPN Meshnet, you may see something like this:
+Se estiver seguindo os meus passos com a rede meshnet da NordVPN, teremos algo como:
+
 
 | To                        | Action | From            |
 | ------------------------- | ------ | --------------- |
@@ -68,22 +71,24 @@ If you use NordVPN Meshnet, you may see something like this:
 | Anywhere (v6) on nordlynx | ALLOW  | Anywhere (v6)   |
 | 22/tcp                    | ALLOW  | 192.168.10.0/24 |
 
-In that case, if nordlynx is set to "anywhere on nordlynx", you do not need to change anything. You do not need to open port 18789, because any device on your NordVPN mesh can already reach every port on the server. If you want to be stricter, you can allow only port 22 (TCP) and 18789 on the NordVPN mesh:
+
+Nesse caso minha rede nordlynx esta configurada com o anywhere on nordlynx, nada precisa ser alterado, nao preciso liberar a porta 18789, pois qualquer dispositivo meu conectado nessa rede privativa da nordvpn pode se comunicar com qualquer porta do meu servidor. Porém se quiser ser mais restritivo, poderiamos deixar apenas acesso apenas a porta 22 com protocolo tcp e a porta 18789 ambos na rede meshnet da NordVPN.
 
 ```bash
-# 1. Remove the "anywhere on nordlynx" rule
+# 1. Remove todas as permissoes "anywhere on nordlynx" da rede meshnet (NordVPN)
 sudo ufw delete allow in on nordlynx
 
-# 2. Allow SSH on the NordVPN mesh
+# 2. Permite acesso via SSH na rede meshnet (NordVPN)
 sudo ufw allow in on nordlynx to any port 22 proto tcp
 
-# 3. Allow port 18789 on the NordVPN mesh
+#3. Libera a porta 189789 na rede meshnet (NordVPN)
 sudo ufw allow in on nordlynx to any port 18789
 ```
 
-**Note:** You need these rules when NordLynx is not set to accept connections on any port ("Anywhere on nordlynx").
+OBS: Quando essas regras são necessárias: As regras são importantes quando a interface NordLynx não está configurada para aceitar conexões em qualquer porta ("Anywhere on nordlynx")..
 
-After running the commands, the table may look like this:
+Ao executar os comandos teríamos algo assim:
+
 
 | To                      | Action | From          |
 | ----------------------- | ------ | ------------- |
@@ -92,49 +97,50 @@ After running the commands, the table may look like this:
 | 22/tcp (v6) on nordlynx | ALLOW  | Anywhere (v6) |
 | 18789 (v6) on nordlynx  | ALLOW  | Anywhere (v6) |
 
-You can also limit which IPs can connect (e.g. only your local network or one fixed IP) by changing the `from` part in the firewall rules.
 
-## 🚀 5. Build and start
+Poderiamos restringir tambem de qual IP podemos receber conexões, apenas da nossa rede local, ou ate mesmo de um IP fixo alterando o from no firewall.
 
-Make sure you are in the folder that has the `Dockerfile` and `docker-compose.yml` (e.g. `~/openclaw`). If needed, log in to Docker Hub and start the service:
+## 🚀 5. Build e Inicialização
+
+Certifique-se de estar no diretório onde estão o `Dockerfile` e o `docker-compose.yml` (ex.: `~/openclaw`). Se necessário, faça login no Docker Hub e suba o serviço:
 
 ```bash
 cd ~/openclaw
 
-# Log in to the registry (if needed)
+# Login no registro (se necessário)
 docker login
 
-# Build and start the container
+# Força o build e start do container
 docker compose up --build -d
 
-# Watch resource usage
+# Acompanhar o consumo de recursos
 docker stats
 ```
 
-## 🔑 6. Onboarding (first-time setup)
+## 🔑 6. Onboarding (Configuração Inicial)
 
-With the container running, start the setup wizard to add your API keys and dashboard password:
+Com o container rodando, execute o assistente para configurar suas chaves de API e senha do Dashboard:
 
 ```bash
 docker exec -it open-claw openclaw onboard
 ```
 
-Or open a shell inside the container. If you do that, for the rest of this guide you can skip `docker exec -it open-claw` and run commands directly (e.g. `openclaw --version`):
+ou, acesse diretamente o terminal do container, caso escolha essa alternativa os demais comando nesse passo a passo explicado, estando dentro do terminal do container, ignorar `docker exec -it open-claw` e executar diretamente, por exemplo `openclaw --version` 
 
 ```bash
 docker exec -it open-claw /bin/bash
 openclaw onboard
 ```
 
-After setup, you can open the dashboard in your browser (e.g. on a Galaxy Book: `http://RASPBERRY_IP:18789` or using one of the access options below).
+Após configurar, você poderá acessar o dashboard pelo navegador (por exemplo, no Galaxy Book: `http://IP_RASPBERRY:18789` ou via uma das opções de acesso descritas mais abaixo).
 
-Example of what the wizard shows (sensitive values are replaced with placeholders in this guide):
+Exemplo de saída do assistente (valores sensíveis substituídos por placeholders neste guia):
 
 ```
 🦞 OpenClaw 2026.3.11 (29dc654)
    Pairing codes exist because even bots believe in consent—and good security hygiene.
 
-▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
 ██░▄▄▄░██░▄▄░██░▄▄▄██░▀██░██░▄▄▀██░████░▄▄▀██░███░██
 ██░███░██░▀▀░██░▄▄▄██░█░█░██░█████░████░▀▀░██░█░█░██
 ██░▀▀▀░██░█████░▀▀▀██░██▄░██░▀▀▄██░▀▀░█░██░██▄▀▄▀▄██
@@ -156,7 +162,7 @@ Example of what the wizard shows (sensitive values are replaced with placeholder
 │  If multiple users can message one tool-enabled agent, they share that delegated tool      │
 │  authority.                                                                                │
 │                                                                                            │
-│  If you're not comfortable with security hardening and access control, don't run           │
+│  If you’re not comfortable with security hardening and access control, don’t run           │
 │  OpenClaw.                                                                                 │
 │  Ask someone experienced to help before enabling tools or exposing it to the internet.     │
 │                                                                                            │
@@ -167,7 +173,7 @@ Example of what the wizard shows (sensitive values are replaced with placeholder
 │  - Sandbox + least-privilege tools.                                                        │
 │  - Shared inboxes: isolate DM sessions (`session.dmScope: per-channel-peer`) and keep      │
 │    tool access minimal.                                                                    │
-│  - Keep secrets out of the agent's reachable filesystem.                                   │
+│  - Keep secrets out of the agent’s reachable filesystem.                                   │
 │  - Use the strongest available model for any bot with tools or untrusted inboxes.          │
 │                                                                                            │
 │  Run regularly:                                                                            │
@@ -206,7 +212,7 @@ Example of what the wizard shows (sensitive values are replaced with placeholder
 │  Paste API key now
 │
 ◇  Enter OpenRouter API key
-│  sk-or-v1-[REDACTED]  (replace with your key from https://openrouter.ai; never share real keys)
+│  sk-or-v1-[REDACTED]  (substitua pela sua chave em https://openrouter.ai; nunca publique chaves reais)
 │
 ◇  Model configured ─────────────────────╮
 │                                        │
@@ -233,7 +239,7 @@ Example of what the wizard shows (sensitive values are replaced with placeholder
 │  Enter password now
 │
 ◇  Gateway password
-│  [GATEWAY_PASSWORD]  (choose a strong password; this is only an example)
+│  [SENHA_DO_GATEWAY]  (defina uma senha forte; este é apenas um exemplo)
 │
 ◇  Channel status ────────────────────────────╮
 │                                             │
@@ -292,7 +298,7 @@ Sessions OK: $OPENCLAW_HOME/state/agents/main/sessions
 │  Eligible: 2                │
 │  Missing requirements: 42   │
 │  Unsupported on this OS: 7  │
-│  Blocked by allowlist: 0     │
+│  Blocked by allowlist: 0    │
 │                             │
 ├─────────────────────────────╯
 │
@@ -343,7 +349,7 @@ Session store (main): /app/data/state/agents/main/sessions/sessions.json (1 entr
 │  plaintext ws:// to a non-loopback address.)                                      │
 │  Docs: https://docs.openclaw.ai/web/control-ui                                    │
 │                                                                                   │
-├──────────────────────────────────────────────────────────────────────────────────╯
+├───────────────────────────────────────────────────────────────────────────────────╯
 │
 ◇  Workspace backup ────────────────────────────────────────╮
 │                                                           │
@@ -365,7 +371,7 @@ Failed to install completion: Error: EACCES: permission denied, mkdir '/nonexist
 │
 ◇  Shell completion ───────────────────────────────────────────────────────╮
 │                                                                          │
-│  Shell completion installed. Restart your shell or run: source ~/.zshrc   │
+│  Shell completion installed. Restart your shell or run: source ~/.zshrc  │
 │                                                                          │
 ├──────────────────────────────────────────────────────────────────────────╯
 │
@@ -380,7 +386,7 @@ Failed to install completion: Error: EACCES: permission denied, mkdir '/nonexist
 │
 ◇  What now ─────────────────────────────────────────────────────────────╮
 │                                                                        │
-│  What now: https://openclaw.ai/showcase ("What People Are Building").   │
+│  What now: https://openclaw.ai/showcase ("What People Are Building").  │
 │                                                                        │
 ├────────────────────────────────────────────────────────────────────────╯
 │
@@ -388,115 +394,119 @@ Failed to install completion: Error: EACCES: permission denied, mkdir '/nonexist
 
 ```
 
-**Tip — free vs paid models:** Models marked as *free* on OpenRouter may often fail or not answer. After you add a paid limit to your OpenRouter account (e.g. a small amount in dollars), the models usually work in a stable way. For reliable use, set a minimum credit on [OpenRouter](https://openrouter.ai).
+**Dica — modelos gratuitos vs. crédito pago:** Os modelos marcados como *free* no OpenRouter podem falhar ou não responder com frequência. Após liberar um limite de uso pago na sua conta OpenRouter (ex.: um valor mínimo em dólares), as chamadas aos modelos tendem a funcionar de forma estável. Para uso confiável, considere configurar um crédito mínimo na [OpenRouter](https://openrouter.ai).
 
-### Trusted addresses (CORS)
+### Endereços confiáveis (CORS)
 
-Add the addresses you will use to open the dashboard so you do not get CORS errors. Change the list below to match your setup:
+Adicione os endereços de onde você vai acessar o dashboard para evitar erro de CORS. Ajuste a lista abaixo conforme seu uso:
 
-- **Raspberry local IP:** the server must have HTTPS.
-- **Server hostname:** the server must have HTTPS.
-- **Server name on the mesh:** the server must have HTTPS.
+- **IP local do Raspberry:** exige que o servidor tenha HTTPS configurado.
+- **Nome do servidor (hostname):** exige que o servidor tenha HTTPS configurado.
+- **Nome do servidor na meshnet:** exige que o servidor tenha HTTPS configurado.
 
-Example (replace the IPs and hostnames with yours — e.g. LAN IP, mesh IP, local names):
+Exemplo (substitua os IPs e hostnames pelos seus — ex.: IP da LAN, IP da meshnet, nomes locais):
 
 ```bash
-docker exec -it open-claw openclaw config set gateway.controlUi.allowedOrigins '["http://localhost:18789","https://YOUR_LAN_IP:18789","https://MESHNET_IP:18789","https://raspberry-server.local:18789","https://raspberry-server.nord:18789"]'
+docker exec -it open-claw openclaw config set gateway.controlUi.allowedOrigins '["http://localhost:18789","https://IP_DA_SUA_LAN:18789","https://IP_MESHNET:18789","https://raspberry-server.local:18789","https://raspberry-server.nord:18789"]'
 docker compose restart open-claw
 ```
 
-## Ways to access the dashboard
+## Opções de acesso ao dashboard
 
-In short, there are **two ways to access** the dashboard: (1) **localhost** — because the server has no desktop, we use an SSH tunnel from your computer (e.g. Galaxy Book) to the server, so OpenClaw sees the connection as local (Option 1 below); (2) **direct URL** — you need HTTPS on the server (e.g. a reverse proxy like Nginx, or Cloudflare Tunnel; on a private or mesh network you can also use Nginx for HTTPS and the “green padlock” Secure Context). This guide uses **Option 1**; other options will be added when tested.
+O dashboard permite, em resumo, **duas formas de acesso:** (1) **localhost** — como o servidor não tem interface gráfica, usou-se túnel SSH do cliente (ex.: Galaxy Book) ao servidor, de modo que o OpenClaw “vê” a conexão como local (Opção 1 abaixo); (2) **acesso direto por URL** — exige certificado HTTPS no servidor (reverse proxy, ex.: Nginx, ou Cloudflare Tunnel que pode fornecer isso; em rede privada/mesh também é possível usar HTTPS com Nginx para o “cadeado verde” e Secure Context). Este guia foi escrito usando a **Opção 1**; outras opções serão documentadas conforme testadas.
 
-### Overview: public vs private access
+### Visão geral: acesso público vs privado
 
-**1. Public access (from anywhere, no VPN)**  
-The service is on the internet.
+**1. Acesso público (qualquer lugar do mundo, sem VPN)**  
+O serviço fica exposto na internet.
 
-- **Cloudflare Tunnel:** You do not need to open ports on your router. The Raspberry connects to Cloudflare and creates a tunnel. You access it with something like `openclaw.yourdomain.com`. This is the safest way for public access.
-- **Port forwarding:** Open port 443 on the router and point it to the Raspberry. You need dynamic DNS (DDNS) if you do not have a fixed IP, and a reverse proxy (e.g. Nginx) for HTTPS.
+- **Cloudflare Tunnel:** Não é preciso abrir portas no roteador. O Raspberry “disca” para a Cloudflare e cria um túnel. Acesso via algo como `openclaw.seudominio.com`. Opção mais segura para acesso público.
+- **Port forwarding (redirecionamento de portas):** Abrir a porta 443 no roteador apontando para o IP do Raspberry. Exige DNS dinâmico (DDNS) se não houver IP fixo e um reverse proxy (ex.: Nginx) para HTTPS.
 
-**2. Private access / mesh network (only your devices)**  
-The service is not on the public internet; only on your private “cloud”.
+**2. Acesso privado / rede mesh (somente seus dispositivos)**  
+O serviço não fica na internet pública; só existe na “nuvem privada” que você criou.
 
-- **Tailscale / NordVPN Meshnet:** The Raspberry and your computer (e.g. Galaxy Book) join a secure virtual network. From anywhere, when the mesh is on on your computer, you can open the dashboard using the Raspberry’s mesh IP or name.
+- **Tailscale / NordVPN Meshnet:** O Raspberry e o cliente (ex.: Galaxy Book) formam uma rede virtual segura. De qualquer lugar, com a mesh ativa no cliente, acessa-se o dashboard pelo IP (ou nome) da mesh do Raspberry.
 
 **3. HTTPS**  
-- **Why a reverse proxy:** The browser needs HTTPS for some features (e.g. Secure Context for chat). Nginx can provide the SSL certificate (“green padlock”) so the dashboard works without the SSH tunnel.
-- **Cloudflare Tunnel:** Gives you an SSL certificate automatically, so you do not need to install one on the server.
+- **Papel do reverse proxy aqui:** O navegador exige HTTPS para certos recursos (ex.: Secure Context do chat). O Nginx, nesse cenário, serve para fornecer o certificado SSL (“cadeado verde”), fazendo o dashboard funcionar sem depender do túnel SSH.
+- **Cloudflare Tunnel:** Fornece automaticamente certificado SSL, nao sendo necessário a instalação no servidor.
 
 ---
 
-### Option 1: SSH tunnel (simulates localhost)
+### Opção 1: Túnel SSH (simula localhost)
 
-This is the fastest way to try the dashboard without setting up HTTPS: your computer (e.g. Galaxy Book) “sees” OpenClaw as if it were running on it.
+Esta é a forma mais rápida de testar sem configurar HTTPS: o seu computador (ex.: Galaxy Book) "enxerga" o OpenClaw como se estivesse rodando nele.
 
-On your Galaxy Book, open a terminal.
+No seu Galaxy Book, abra o terminal
 
-Run this command (replace `YOUR_USER` and `RASPBERRY_IP` with your details):
+Rode este comando (substitua `SEU_USUARIO` e `IP_DO_RASPBERRY` pelos seus dados):
 
 ```bash
-ssh -L 18789:localhost:18789 YOUR_USER@RASPBERRY_IP
+ssh -L 18789:localhost:18789 SEU_USUARIO@IP_DO_RASPBERRY
 ```
 
-**Important:** Keep this terminal window open. While the SSH tunnel is active, you can open the dashboard at `http://localhost:18789`. If you close the tunnel, access stops until you start it again.
+**Importante:** Mantenha essa janela do terminal aberta. Enquanto o túnel SSH estiver ativo, você consegue acessar o dashboard em `http://localhost:18789`. Se fechar o túnel, o acesso deixa de funcionar até você abrir o túnel novamente.
 
-Then, in the Galaxy Book browser, go to: [http://localhost:18789](http://localhost:18789).
+Agora, no navegador do Galaxy Book, acesse: [http://localhost:18789](http://localhost:18789).
 
-Result: The browser sees “localhost” in the URL, turns on secure mode, and the error goes away. All traffic goes through SSH to the Raspberry.
+Resultado: O navegador verá "localhost" na URL, ativará o modo seguro automaticamente e o erro sumirá. O tráfego será tunelado via SSH para o Raspberry.
 
-What does this command do?  
-The command `ssh -L 18789:localhost:18789 YOUR_USER@RASPBERRY_IP` creates an SSH tunnel with local port forwarding.
+O que exatamente esse comando faz?
+O comando `ssh -L 18789:localhost:18789 SEU_USUARIO@IP_DO_RASPBERRY` cria um Túnel SSH com Redirecionamento de Porta Local (Local Port Forwarding).
 
-- **ssh:** Starts the secure connection.
-- **-L:** You want local forwarding.
-- **18789 (first):** The port opened on your Galaxy Book.
-- **localhost:18789 (middle):** Traffic that hits this port on the Galaxy is sent to the Raspberry’s localhost on port 18789.
-- **YOUR_USER@RASPBERRY_IP:** Replace with your SSH user and Raspberry IP (e.g. `user@192.168.10.23`).
+ssh: Abre o protocolo de comunicação segura.
 
-In short: Your Galaxy Book uses its port 18789. Everything you do in the browser at localhost:18789 is packed, encrypted, sent over the network to the Raspberry and passed to OpenClaw. To the browser, the data never left your computer, so it enables “Secure Context”.
+-L: Diz que você quer fazer um redirecionamento Local.
 
----
+18789 (o primeiro): É a porta que será aberta no seu Galaxy Book.
 
-### Option 2: HTTPS with reverse proxy (Nginx) for local IP/DNS
+localhost:18789 (o meio): Diz que o tráfego que chegar na porta do Galaxy deve ser enviado para o localhost do destino (o Raspberry), na porta 18789.
 
-**Nginx as a reverse proxy** is useful here for three main reasons: (1) it provides the TLS/SSL certificate so the dashboard has HTTPS and the browser can use “Secure Context” for chat without the SSH tunnel; (2) you can open OpenClaw directly from any device on the network using the Raspberry’s local IP or hostname (e.g. `https://192.168.10.23:18789` or `https://raspberry-server.local:18789`) without extra steps; (3) it acts as the TLS layer and keeps the internal service separate from outside connections.
+`SEU_USUARIO@IP_DO_RASPBERRY`: substitua pelo seu usuário SSH e pelo IP do Raspberry (ex.: `usuario@192.168.10.23`).
 
-> **Not set up in this project.** The Raspberry Pi 3 B+ with 1 GB of RAM was not enough to run OpenClaw in a stable way. Adding Nginx on the same machine would make things worse. This step will be documented when using a machine with more resources (e.g. a VPS with at least 2 GB of RAM).
+Em resumo: O seu Galaxy Book reserva a porta 18789 dele. Tudo o que você digita no navegador do Galaxy apontando para localhost:18789 é empacotado, criptografado, enviado pelo cabo de rede até o Raspberry e entregue diretamente ao OpenClaw. Para o navegador, os dados nunca saíram do seu computador, por isso ele ativa o "Secure Context".
 
 ---
 
-### Option 3: HTTPS with Cloudflare Tunnel and/or reverse proxy (Nginx) for public IP/DNS
+### Opção 2: HTTPS com reverse proxy (Nginx) com acesso a IP/DNS locais
 
-**Cloudflare Tunnel** is the safest way for public access: the Raspberry connects to Cloudflare, so you do not open any ports on your router, and HTTPS with a valid certificate is provided by the tunnel. Nginx can work with it as an internal reverse proxy, receiving requests from the tunnel and sending them to OpenClaw. Together they let you expose the dashboard with your own domain (e.g. `https://openclaw.yourdomain.com`) from anywhere, without a fixed IP or manual SSL setup.
+O **Nginx como reverse proxy** é importante neste cenário por três razões principais: (1) fornece o certificado TLS/SSL que habilita HTTPS no dashboard, eliminando a dependência do túnel SSH para o navegador ativar o "Secure Context" necessário ao chat; (2) permite acessar o OpenClaw diretamente pelo IP local ou hostname do Raspberry (ex.: `https://192.168.10.23:18789` ou `https://raspberry-server.local:18789`) de qualquer dispositivo na rede sem etapas manuais adicionais; (3) serve como camada de terminação TLS, isolando o serviço interno de conexões externas.
 
-> **Not set up in this project.** Same reason as Option 2: the hardware (Raspberry Pi 3 B+ with 1 GB of RAM) could not run OpenClaw stably. This step will be documented when using a machine with more resources (e.g. a VPS with at least 2 GB of RAM).
+> **Não configurado neste projeto.** O Raspberry Pi 3 B+ com 1 GB de RAM mostrou-se insuficiente para rodar OpenClaw de forma estável. Adicionar o Nginx ao mesmo hardware tornaria a situação ainda mais crítica. Esta etapa será documentada em um ambiente com mais recursos (VPS com no mínimo 2 GB de RAM).
 
 ---
 
-## Login, device approval, and using the chat
+### Opção 3: HTTPS com Cloudflare Tunnel e/ou reverse proxy (Nginx) com acesso a IP/DNS públicos.
 
-**With Option 1**, open `http://localhost:18789/overview`. On the overview page, log in: if you chose password auth during onboarding, use the **Password** field and enter the gateway password. (See [login screen](../../assets/openclaw-dashboard-login.png).)
+O **Cloudflare Tunnel** é a opção mais segura para acesso público: o Raspberry "disca" para os servidores da Cloudflare sem que nenhuma porta seja aberta no roteador, e o HTTPS com certificado válido é fornecido automaticamente pelo próprio túnel. O Nginx pode atuar em conjunto como reverse proxy interno, recebendo as requisições vindas do túnel e as repassando ao OpenClaw — essa combinação permite expor o dashboard com um domínio próprio (ex.: `https://openclaw.seudominio.com`) de qualquer lugar do mundo, sem IP fixo e sem configuração manual de SSL.
 
-You must approve the device on the Raspberry. On the Raspberry terminal:
+> **Não configurado neste projeto.** Pelo mesmo motivo da Opção 2: o hardware (Raspberry Pi 3 B+ com 1 GB de RAM) não comportava de forma estável nem o OpenClaw sozinho. Esta etapa será documentada em um ambiente com mais recursos (VPS com no mínimo 2 GB de RAM).
 
-1. List pending devices:
-   ```bash
+---
+
+## Login, aprovação de dispositivo e uso do chat
+
+**Na Opção 1**, acesse `http://localhost:18789/overview`. Na tela de visão geral, faça login: como foi escolhida autenticação por senha no onboarding, use o campo **Password** e cole a senha do gateway. (Ver [tela de login](../../assets/openclaw-dashboard-login.png).)
+
+É necessário aprovar o dispositivo no Raspberry. No terminal do Raspberry:
+
+1. Liste os dispositivos pendentes:
+  ```bash
    docker exec -it open-claw openclaw devices list
-   ```
-2. Approve the device using the ID from the list (the correct ID is shown by `openclaw devices list`; the one below is only an example):
-   ```bash
+  ```
+2. Aprove usando o ID que aparecer na lista (o ID correto é exibido por `openclaw devices list`; o exemplo abaixo é apenas placeholder):
+  ```bash
    docker exec -it open-claw openclaw devices approve xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-   ```
+  ```
 
-After approval, click **Connect** in the web interface; the icon in the top corner will turn green.
+Depois de aprovar, na interface web clique em **Conectar** e veja que no canto superior o icone ira ficar verde
 
 ---
 
-## Adding and removing models
+## Adicionar e remover modelos
 
-The `models set` command adds models to the list. Examples:
+O comando `models set` adiciona modelos ao conjunto disponível. Exemplos:
 
 ```bash
 docker exec -it open-claw openclaw models set 'openrouter/google/gemini-2.5-flash-lite'
@@ -505,14 +515,15 @@ docker exec -it open-claw openclaw models set 'openrouter/openai/gpt-oss-120b:fr
 docker exec -it open-claw openclaw models set 'openrouter/meta-llama/llama-3.3-70b-instruct:free'
 ```
 
-To remove models, edit the config file and delete the entries you want under `agents.defaults.models`:
+Para remover modelos, edite o arquivo de configuração e apague as entradas desejadas em `agents.defaults.models`:
 
 ```bash
 sudo nano ~/openclaw/volume/config.toml
 ```
 
-Finally, test the chat by sending “Hello” and check that you get a reply.
+Por fim, teste o chat, enviando um "Olá" e veja se há resposta.
 
-If you see a 404 error or the chat does not work: in the sidebar under Agents, make sure the model you set in the config is selected for the agent you are using. (See [agents/model panel](../../assets/openclaw-agents-model-panel.png) for an example.)
+Se aparecer erro 404 ou falha ao interagir: verifique no painel lateral em Agentes se o modelo que você definiu nas configurações está selecionado para o agente em uso. (Ver [painel de agentes/modelo](../../assets/openclaw-agents-model-panel.png) como exemplo.)
 
 ---
+

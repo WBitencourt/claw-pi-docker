@@ -2,12 +2,6 @@
 
 This guide describes two ways to install Docker: a **quick** method (for development) and the **official repository** method (recommended for production).
 
-## 🛠 Hardware used (Raspberry Pi) as server
-
-- **Device:** Raspberry Pi 3 Model B+ (1GB RAM)
-- **Storage:** 64GB Micro SD
-- **Initial access:** HDMI cable + Monitor (only for first boot)
-
 ---
 
 # 1. Quick method (development)

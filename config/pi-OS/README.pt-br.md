@@ -195,3 +195,15 @@ nordvpn fileshare accept --path /home/wbitencourt/files [UUID-DO-ARQUIVO]
 | Anywhere on nordlynx      | ALLOW  | Anywhere        |
 | Anywhere (v6) on nordlynx | ALLOW  | Anywhere (v6)   |
 | 22/tcp                    | ALLOW  | 192.168.10.0/24 |
+
+---
+
+## ⚠️ Observações sobre limitações de hardware
+
+Durante os testes com o OpenClaw rodando neste Raspberry Pi 3 B+, ficou evidente que **1 GB de RAM é insuficiente** para manter o serviço estável. O servidor travava constantemente e o uso de CPU ficava quase sempre em **100%**, mesmo com os limites de recursos configurados no Docker Compose.
+
+Ao tentar adicionar integrações adicionais ao OpenClaw — como o **Discord** — os travamentos se tornaram ainda mais frequentes, tornando o serviço inutilizável e exigindo derrubar e reiniciar o container manualmente a todo momento.
+
+Mesmo com o container limitado a parte da memória disponível, **1 GB de RAM no total para o servidor é pouco demais** para essa carga de trabalho.
+
+**Decisão:** não prosseguir com o uso nesta versão do Raspberry Pi. O próximo passo é testar em uma **VPS com no mínimo 2 GB de RAM** e processador mais potente, onde o OpenClaw deverá operar de forma estável.
